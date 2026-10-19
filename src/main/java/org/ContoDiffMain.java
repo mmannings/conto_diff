@@ -21,7 +21,7 @@ package org;
 
 import org.apache.commons.cli.*;
 import org.gomma.diff.DiffComputation;
-import org.gomma.diff.DiffExecutor;
+import org.gomma.diff.ContoDiffException;
 import org.io.OntologyReader;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLOntology;
@@ -85,7 +85,6 @@ public class ContoDiffMain {
             e.printStackTrace();
         }
         System.out.println("load ontology "+ firstOnt.getClassesInSignature().size());
-            DiffExecutor.getSingleton().setupRepository();
             DiffComputation computation = new DiffComputation();
             DiffEvolutionMapping mapping = computation.computeDiff(firstOnt, secontOnt);
             if (output != null){
@@ -101,7 +100,6 @@ public class ContoDiffMain {
         OWLOntology left = setOntology(reader, diffContext.getFileLeft(), null);
         OWLOntology right = setOntology(reader, diffContext.getFileRight(), null);
 
-        DiffExecutor.getSingleton().setupRepository();
         DiffComputation computation = new DiffComputation();
         DiffEvolutionMapping mapping = computation.computeDiff(left, right);
         Map<String, String> prefixes = OWLManagerCustom.getAllPrefixes(left, right);
@@ -155,6 +153,7 @@ public class ContoDiffMain {
         }
         sb.append(sdiff.getSoftwareAgent());
 
+        ContoDiffException.checkInterrupted();
         Files.write(Paths.get(diffContext.getOutputFile()), sb.toString().getBytes(StandardCharsets.UTF_8));
 
         StringBuilder diffs = new StringBuilder();

@@ -20,7 +20,6 @@ package org.gomma.diff;
 
 public class Globals {
 	//DB connection data
-	public static final String DB_URL = "jdbc:h2:./COntoDiff;MODE=MYSQL;AUTO_SERVER=TRUE";
 	
 	//Delimiter for multiple values
 	public static String DELIMITER = "#";
