@@ -31,7 +31,16 @@ public class DataBaseHandler implements AutoCloseable {
     public Connection getDatabaseConnection() throws SQLException {
         ContoDiffException.checkInterrupted();
         if (closed) throw new SQLException("Comparison database is closed");
-        if (connection == null) connection = DriverManager.getConnection(url);
+        if (connection == null) {
+            // JDBC discovery may have run before the host application's class loader
+            // was available. Load H2 through this library's loader explicitly.
+            try {
+                Class.forName("org.h2.Driver");
+            } catch (ClassNotFoundException e) {
+                throw new SQLException("H2 JDBC driver is missing from the runtime classpath", e);
+            }
+            connection = DriverManager.getConnection(url);
+        }
         return connection;
     }
 

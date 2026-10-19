@@ -22,11 +22,11 @@ mvn install:install-file -Dfile=lib/gomma-kernel.jar -DgroupId=Gomma -DartifactI
 mvn clean verify
 ```
 
-The standalone artifact is `target/ContoDiff-1.1.0-shaded.jar`. Run from the
+The standalone artifact is `target/ContoDiff-1.1.1-shaded.jar`. Run from the
 repository root, where the `rules/` directory is available:
 
 ```sh
-java -jar target/ContoDiff-1.1.0-shaded.jar -oa old.owl -ob new.owl -o diff.txt
+java -jar target/ContoDiff-1.1.1-shaded.jar -oa old.owl -ob new.owl -o diff.txt
 ```
 
 ## Comparison lifecycle in 1.1.0
@@ -54,3 +54,14 @@ Regression tests cover overlapping calls on the same `DiffComputation`, SQL
 failure followed by a successful comparison, missing rules, cancellation, and
 database isolation and cleanup. Existing missing production diffs still need
 recalculation after deploying the new library.
+
+## JDBC driver loading in 1.1.1
+
+H2 is loaded explicitly before opening the comparison database. This supports
+hosts where JDBC discovery ran before the application's dependency class loader
+was available, including executable Spring Boot deployments. Missing drivers
+still fail with a `SQLException` retaining the original cause.
+
+`JdbcDriverLoadingTest` launches a fresh JVM and initializes JDBC discovery with
+a class loader that cannot see H2 before opening a comparison database. This
+regression test fails with 1.1.0 and passes with explicit driver initialization.
