@@ -47,7 +47,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 public class DiffExecutor {
 	
-	private static DiffExecutor singleton;
+	private final DataBaseHandler database;
 	
 	public List<String> allPrimitiveTypes;
 	public List<Type> allRegisteredTypes;
@@ -66,68 +66,61 @@ public class DiffExecutor {
 	
 	public int round = -1;
 	
-	public DiffExecutor() {
+	public DiffExecutor(DataBaseHandler database) {
+        this.database = database;
 		this.rules = new Vector<Rule>();
 		this.actionDesc = new HashMap<String, ActionDesc>();
 	}
 	
-	public static DiffExecutor getSingleton() {
-		if (singleton==null) {
-			singleton = new DiffExecutor();
-		}
-		return singleton;
-	}
-	
 	public void setupRepository() {
 		try {
-			DataBaseHandler.getInstance().executeDml(Globals.VERSION_TABLE_SCHEMA);
-			DataBaseHandler.getInstance().executeDml(Globals.WORKING_TABLE_SCHEMA);
-			DataBaseHandler.getInstance().executeDml(Globals.HIGH_LEVEL_RESULT_SCHEMA);
-			DataBaseHandler.getInstance().executeDml(Globals.LOW_LEVEL_RESULT_SCHEMA);
-			DataBaseHandler.getInstance().executeDml(Globals.HIGH_TO_LOW_LEVEL_MAPPING_SCHEMA);
+			database.executeDml(Globals.VERSION_TABLE_SCHEMA);
+			database.executeDml(Globals.WORKING_TABLE_SCHEMA);
+			database.executeDml(Globals.HIGH_LEVEL_RESULT_SCHEMA);
+			database.executeDml(Globals.LOW_LEVEL_RESULT_SCHEMA);
+			database.executeDml(Globals.HIGH_TO_LOW_LEVEL_MAPPING_SCHEMA);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 	
 	public void destroyRepository() {
 		try {
-			DataBaseHandler.getInstance().executeDml("DROP TABLE IF EXISTS "+Globals.VERSION_TABLE);
-			DataBaseHandler.getInstance().executeDml("DROP TABLE IF EXISTS "+Globals.WORKING_TABLE);
-			DataBaseHandler.getInstance().executeDml("DROP TABLE IF EXISTS "+Globals.HIGH_LEVEL_RESULT_TABLE);
-			DataBaseHandler.getInstance().executeDml("DROP TABLE IF EXISTS "+Globals.LOW_LEVEL_RESULT_TABLE);
-			DataBaseHandler.getInstance().executeDml("DROP TABLE IF EXISTS "+Globals.HIGH_TO_LOW_LEVEL_MAPPING_TABLE);
+			database.executeDml("DROP TABLE IF EXISTS "+Globals.VERSION_TABLE);
+			database.executeDml("DROP TABLE IF EXISTS "+Globals.WORKING_TABLE);
+			database.executeDml("DROP TABLE IF EXISTS "+Globals.HIGH_LEVEL_RESULT_TABLE);
+			database.executeDml("DROP TABLE IF EXISTS "+Globals.LOW_LEVEL_RESULT_TABLE);
+			database.executeDml("DROP TABLE IF EXISTS "+Globals.HIGH_TO_LOW_LEVEL_MAPPING_TABLE);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 	
 	public void integrateVersionData(String sqlStatementsFile) {
 		System.out.print("Integrating ontology data ...  ");
 		long start = System.currentTimeMillis();
-		try {
-			DataBaseHandler.getInstance().executeDml("TRUNCATE TABLE "+Globals.VERSION_TABLE);
-			DataBaseHandler.getInstance().executeDml("TRUNCATE TABLE "+Globals.WORKING_TABLE);
-			RandomAccessFile file = new RandomAccessFile(sqlStatementsFile,"r");
+		try (RandomAccessFile file = new RandomAccessFile(sqlStatementsFile,"r")) {
+			database.executeDml("TRUNCATE TABLE "+Globals.VERSION_TABLE);
+			database.executeDml("TRUNCATE TABLE "+Globals.WORKING_TABLE);
 			String line;
 			String currentQuery = "";
 			while ((line=file.readLine())!=null) {
 				line = line.trim();
 				currentQuery += " "+line;
 				if (line.endsWith(";")) {
-					DataBaseHandler.getInstance().executeDml(currentQuery);
+					database.executeDml(currentQuery);
 					currentQuery = "";
 				}
 			}
 			if (currentQuery.trim().length()>0) {
-				DataBaseHandler.getInstance().executeDml(currentQuery);
+				database.executeDml(currentQuery);
 			}
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 		System.out.println(" Done ! ("+(System.currentTimeMillis()-start)+" ms)");
 	}
@@ -144,7 +137,7 @@ public class DiffExecutor {
 	}
 	
 	public void loadRules(String fileLocation) {
-		RuleParser p = new RuleParser(fileLocation);
+		RuleParser p = new RuleParser(fileLocation, this);
 		p.importRules();
 		this.rules = p.rulesToImport;
 		for (int i=0;i<this.rules.size();i++) {
@@ -165,11 +158,11 @@ public class DiffExecutor {
 			System.out.println(" ...   "+p.availableTypes.size()+" types and "+
 					p.changeActionDescToImport.size()+" change action descriptions parsed ! ("+duration+" ms)");
 		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		} catch (SAXException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 	
@@ -183,18 +176,18 @@ public class DiffExecutor {
 			System.out.print("Computation of basic changes ...  ");
 			long start = System.currentTimeMillis();
 			if (cleanTable) {
-				DataBaseHandler.getInstance().executeDml("TRUNCATE TABLE "+Globals.WORKING_TABLE);
+				database.executeDml("TRUNCATE TABLE "+Globals.WORKING_TABLE);
 			}
 			for (int i=0;i<this.allRegisteredTypes.size();i++) {
 				Type currentType = this.allRegisteredTypes.get(i);
 				String addQuery = this.getQueryForAdd(currentType);
 				String delQuery = this.getQueryForDel(currentType);
-				DataBaseHandler.getInstance().executeDml(addQuery);
-				DataBaseHandler.getInstance().executeDml(delQuery);
+				database.executeDml(addQuery);
+				database.executeDml(delQuery);
 			}
 			System.out.println(" Done ! ("+(System.currentTimeMillis()-start)+" ms)");
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 	
@@ -208,6 +201,7 @@ public class DiffExecutor {
 		
 		round = 1;
 		do {
+            ContoDiffException.checkInterrupted();
 			long start = System.currentTimeMillis();
 			System.out.print("Applying rules - Round "+round+" ... ");
 			newlyGeneratedResultActions.clear();
@@ -252,8 +246,8 @@ public class DiffExecutor {
 					}
 				}
 				try {
-					DataBaseHandler.getInstance().executeDml("SET @group_concat_max_len = 4096");
-					rs = DataBaseHandler.getInstance().executeSelect(query.toString());
+					database.executeDml("SET @group_concat_max_len = 4096");
+					rs = database.executeSelect(query.toString());
 					List<ActionData> allMergedActions = new Vector<ActionData>();
 					while (rs.next()) {
 						int currentIndex = 2;
@@ -270,10 +264,10 @@ public class DiffExecutor {
 						currentActionData.computeDerivedFrom(inputActions);
 						allMergedActions.add(currentActionData);
 					}
-					rs.close();
-					//DataBaseHandler.getInstance().executeDml("DELETE FROM "+DiffExecutor.WORKING_TABLE+" WHERE change_action='"+currentActionDesc.name+"'");
+					database.closeStatement(rs);
+					//database.executeDml("DELETE FROM "+DiffExecutor.WORKING_TABLE+" WHERE change_action='"+currentActionDesc.name+"'");
 					if (currentActionDesc.level>1) {
-						DataBaseHandler.getInstance().executeDml("UPDATE "+Globals.WORKING_TABLE+" SET reduce='1' WHERE change_action='"+currentActionDesc.name+"'");
+						database.executeDml("UPDATE "+Globals.WORKING_TABLE+" SET reduce='1' WHERE change_action='"+currentActionDesc.name+"'");
 					}
 					for (int j=0;j<allMergedActions.size();j++) {
 						ActionData actionData = allMergedActions.get(j);
@@ -289,10 +283,10 @@ public class DiffExecutor {
 							insert += ",'"+actionData.dataValues.get(k).replace("'", "''")+"'";
 						}
 						insert += ")";
-						DataBaseHandler.getInstance().executeDml(insert);
+						database.executeDml(insert);
 					}
 				} catch (SQLException e) {
-					e.printStackTrace();
+					throw new ContoDiffException("COnto calculation failed", e);
 				}
 			}
 		}
@@ -316,7 +310,7 @@ public class DiffExecutor {
 					query.append(",value"+(j+1));
 				}
 				query.append(" FROM "+Globals.WORKING_TABLE+" WHERE change_action='"+currentActionDesc.name+"' AND reduce=0");
-				ResultSet rs = DataBaseHandler.getInstance().executeSelect(query.toString());
+				ResultSet rs = database.executeSelect(query.toString());
 				while (rs.next()) {
 					int currentIndex = 1;
 					ActionData currentActionData = new ActionData(currentActionDesc);
@@ -331,7 +325,7 @@ public class DiffExecutor {
 						lowLevelActions.add(currentActionData);
 					}
 				}
-				rs.close();
+				database.closeStatement(rs);
 			}
 			/*
 			HashMap<String,List<String>> highToLowLevelMapping = new HashMap<String, List<String>>();
@@ -348,7 +342,7 @@ public class DiffExecutor {
 				query.append(",'"+lowLevelActionMD5+"'");
 			}
 			query.append(")");
-			ResultSet rs = DataBaseHandler.getInstance().executeSelect(query.toString());
+			ResultSet rs = database.executeSelect(query.toString());
 			while (rs.next()) {
 				ActionData acionData = new ActionData(this.getChangeActionDesc(rs.getString(2)));
 				acionData.md5Key = rs.getString(1);
@@ -365,7 +359,7 @@ public class DiffExecutor {
 			insertHighToLowLevelMapping(this.allRuleMappings);
 			System.out.println("Done ! ("+(System.currentTimeMillis()-start)+" ms)");
  		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 	
@@ -374,10 +368,10 @@ public class DiffExecutor {
 			long start = System.currentTimeMillis();
 			System.out.print("Deleting redundant actions ... ");
 			String query = "DELETE FROM "+Globals.WORKING_TABLE+" WHERE reduce=1";
-			DataBaseHandler.getInstance().executeDml(query);
+			database.executeDml(query);
 			System.out.println("Done ! ("+(System.currentTimeMillis()-start)+" ms)");
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 
@@ -429,7 +423,7 @@ public class DiffExecutor {
 		try {
 			ResultSet rs;
 			/*if (r.resultActionSQLStatement!=null) {
-				rs = DataBaseHandler.getInstance().executeSelect(r.resultActionSQLStatement);
+				rs = database.executeSelect(r.resultActionSQLStatement);
 				while (rs.next()) {
 					ResultActionData data = new ResultActionData(r.resultAction);
 					for (int i=0;i<r.resultAction.resultVariables.size();i++) {
@@ -441,11 +435,11 @@ public class DiffExecutor {
 						this.allGeneratedResultActions.put(dataMD5,data);
 					}
 				}
-				rs.close();
+				database.closeStatement(rs);
 			}*/
 			
 			if (r.fullActionSQLStatement!=null) {
-				rs = DataBaseHandler.getInstance().executeSelect(r.fullActionSQLStatement);
+				rs = database.executeSelect(r.fullActionSQLStatement);
 				List<InputAction> compositeActions = r.getCompositeInputActions();
 				
 				while (rs.next()) {
@@ -477,12 +471,12 @@ public class DiffExecutor {
 					}
 					allRuleMappings.put(resultDataMD5, resultDataInputActions);
 				}
-				rs.close();
+				database.closeStatement(rs);
 			}
 			
 			
 			for (int i=0;i<r.reduceActionSQLStatements.size();i++) {
-				rs = DataBaseHandler.getInstance().executeSelect(r.reduceActionSQLStatements.get(i));
+				rs = database.executeSelect(r.reduceActionSQLStatements.get(i));
 				while (rs.next()) {
 					InputAction inputAction = r.reduceInputActions.get(i);
 					ActionData data = new ActionData(inputAction.actionDesc);
@@ -511,10 +505,10 @@ public class DiffExecutor {
 						}
 					}
 				}
-				rs.close();
+				database.closeStatement(rs);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 
@@ -574,9 +568,9 @@ public class DiffExecutor {
 			}
 			insert += ")";
 			try {
-				DataBaseHandler.getInstance().executeDml(insert);
+				database.executeDml(insert);
 			} catch (SQLException e) {
-				e.printStackTrace();
+				throw new ContoDiffException("COnto calculation failed", e);
 			}
 		}
 	}
@@ -594,7 +588,7 @@ public class DiffExecutor {
 
 	private void insertHighLevelResultActions(List<ActionData> actions) {
 		try {
-			DataBaseHandler.getInstance().executeDml("TRUNCATE TABLE "+Globals.HIGH_LEVEL_RESULT_TABLE);
+			database.executeDml("TRUNCATE TABLE "+Globals.HIGH_LEVEL_RESULT_TABLE);
 			for (int i=0;i<actions.size();i++) {
 				ActionData action = actions.get(i);
 				String name = action.changeActionDesc.name;
@@ -608,16 +602,16 @@ public class DiffExecutor {
 					insert += ",'"+action.dataValues.get(j).replace("'", "''")+"'";
 				}
 				insert += ")";
-				DataBaseHandler.getInstance().executeDml(insert);
+				database.executeDml(insert);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 	
 	private void insertLowLevelResultActions(List<ActionData> actions) {
 		try {
-			DataBaseHandler.getInstance().executeDml("TRUNCATE TABLE "+Globals.LOW_LEVEL_RESULT_TABLE);
+			database.executeDml("TRUNCATE TABLE "+Globals.LOW_LEVEL_RESULT_TABLE);
 			for (int i=0;i<actions.size();i++) {
 				ActionData action = actions.get(i);
 				String  name = action.changeActionDesc.name;
@@ -631,18 +625,18 @@ public class DiffExecutor {
 					insert += ",'"+action.dataValues.get(j).replace("'", "''")+"'";
 				}
 				insert += ")";
-				DataBaseHandler.getInstance().executeDml(insert);
+				database.executeDml(insert);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 	
 	private void insertHighToLowLevelMapping(HashMap<String,List<String>> map) {
 		String query = "INSERT INTO "+Globals.HIGH_TO_LOW_LEVEL_MAPPING_TABLE+" (high_level_action_MD5,low_level_action_MD5) VALUES (?,?)";
 		try {
-			DataBaseHandler.getInstance().executeDml("TRUNCATE TABLE "+Globals.HIGH_TO_LOW_LEVEL_MAPPING_TABLE);
-			PreparedStatement stmt = DataBaseHandler.getInstance().prepareStatement(query);
+			database.executeDml("TRUNCATE TABLE "+Globals.HIGH_TO_LOW_LEVEL_MAPPING_TABLE);
+			try (PreparedStatement stmt = database.prepareStatement(query)) {
 			for (String highActionMD5 : map.keySet()) {
 				List<String> lowActionMD5s = map.get(highActionMD5);
 				for (int i=0;i<lowActionMD5s.size();i++) {
@@ -652,8 +646,9 @@ public class DiffExecutor {
 				}
 			}
 			stmt.executeBatch();
+            }
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 	
@@ -667,14 +662,14 @@ public class DiffExecutor {
 				md5Actions.append(",'"+md5Key+"'");
 				count++;
 				if (count==20000) {
-					DataBaseHandler.getInstance().executeDml(statement+md5Actions.toString()+")");
+					database.executeDml(statement+md5Actions.toString()+")");
 					md5Actions = new StringBuffer("'X'");
 					count=0;
 				}
 			}
-			DataBaseHandler.getInstance().executeDml(statement+md5Actions.toString()+")");
-		} catch (Exception e) {
-			e.printStackTrace();
+			database.executeDml(statement+md5Actions.toString()+")");
+		} catch (SQLException e) {
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 	
@@ -682,14 +677,14 @@ public class DiffExecutor {
 		List<String> importantObjects = new Vector<String>();
 		
 		try {
-			ResultSet rs = DataBaseHandler.getInstance().executeSelect("SELECT value1,value2 FROM "+Globals.WORKING_TABLE+" WHERE change_action='mapObj' AND value1 != value2");
+			ResultSet rs = database.executeSelect("SELECT value1,value2 FROM "+Globals.WORKING_TABLE+" WHERE change_action='mapObj' AND value1 != value2");
 			while (rs.next()) {
 				importantObjects.add(rs.getString(1).trim());
 				importantObjects.add(rs.getString(2).trim());
 			}
-			rs.close();
-		} catch (Exception e) {
-			e.printStackTrace();
+			database.closeStatement(rs);
+		} catch (SQLException e) {
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 		StringBuffer queryPart = new StringBuffer("'X'");
 		for (int i=0;i<importantObjects.size();i++) {
@@ -699,11 +694,11 @@ public class DiffExecutor {
 		String sameAssQuery = "UPDATE "+Globals.WORKING_TABLE+" SET reduce='1' WHERE change_action='mapAss' AND value1=value4 AND value2=value5 AND value3=value6";
 		String sameAttQuery = "UPDATE "+Globals.WORKING_TABLE+" SET reduce='1' WHERE change_action='mapAtt' AND value1=value4 AND value2=value5 AND value3=value6";
 		try {
-			DataBaseHandler.getInstance().executeDml(sameObjQuery);
-			DataBaseHandler.getInstance().executeDml(sameAssQuery);
-			DataBaseHandler.getInstance().executeDml(sameAttQuery);
-		} catch (Exception e) {
-			e.printStackTrace();
+			database.executeDml(sameObjQuery);
+			database.executeDml(sameAssQuery);
+			database.executeDml(sameAttQuery);
+		} catch (SQLException e) {
+			throw new ContoDiffException("COnto calculation failed", e);
 		}
 	}
 }

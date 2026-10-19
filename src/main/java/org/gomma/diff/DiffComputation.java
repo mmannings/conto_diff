@@ -24,7 +24,7 @@ import org.webdifftool.client.model.DiffEvolutionMapping;
 import org.webdifftool.client.model.changes.Change;
 import org.webdifftool.client.model.changes.basic.*;
 import org.webdifftool.client.model.changes.complex.*;
-import org.webdifftool.server.OWLManager;
+import org.gomma.diff.utils.DataBaseHandler;
 import org.webdifftool.server.OWLManagerCustom;
 import org.webdifftool.server.StopWords;
 
@@ -34,11 +34,16 @@ public class DiffComputation {
 
 
     public DiffEvolutionMapping computeDiff(OWLOntology first, OWLOntology second) {
-        String prefix = String.valueOf(Math.abs(new Random().nextLong()));
-        //Globals.addPrefix(prefix);
-        DiffExecutor.getSingleton().setupRepository();
+        ContoDiffException.checkInterrupted();
+        try (DataBaseHandler database = new DataBaseHandler()) {
+            return computeDiff(first, second, database);
+        }
+    }
 
-        OWLManagerCustom owl = new OWLManagerCustom();
+    private DiffEvolutionMapping computeDiff(OWLOntology first, OWLOntology second, DataBaseHandler database) {
+        DiffExecutor executor = new DiffExecutor(database);
+        executor.setupRepository();
+        OWLManagerCustom owl = new OWLManagerCustom(database);
 
         System.out.println("Loading ontology versions");
         owl.parseAndIntegrateChanges(first, second);
@@ -46,16 +51,16 @@ public class DiffComputation {
 
         Map<String, String> conceptNames = owl.conceptNames;
         System.out.println("Loading rules");
-        this.loadConfigForDiffExecutor();
+        this.loadConfigForDiffExecutor(executor);
         System.out.println("Applying rules");
-        DiffExecutor.getSingleton().applyRules();
+        executor.applyRules();
         // currentStatus = "Aggregation of changes";
         System.out.println("Aggregation of changes");
-        DiffExecutor.getSingleton().mergeResultActions();
+        executor.mergeResultActions();
         // currentStatus = "Building of final diff result";
         System.out.println("Building of final diff result");
-        DiffExecutor.getSingleton().retrieveAndStoreHighLevelActions();
-        DiffEvolutionMapping diffResult = new DiffEvolutionMapping(this.getFullDiffMapping(conceptNames), this.getCompactDiffMapping(), this.getBasicDiffMapping());
+        executor.retrieveAndStoreHighLevelActions();
+        DiffEvolutionMapping diffResult = new DiffEvolutionMapping(this.getFullDiffMapping(conceptNames, executor), this.getCompactDiffMapping(executor), this.getBasicDiffMapping(executor));
         this.computeWordFrequencies(diffResult);
         diffResult.computeDependenciesForBasicChanges();
 
@@ -67,23 +72,22 @@ public class DiffComputation {
         diffResult.oldVersionRelationshipSize = owl.oldVersionRelationshipSize;
         diffResult.oldVersionAttributeSize = owl.oldVersionAttributeSize;
 
-        // Clean repository
-        DiffExecutor.getSingleton().destroyRepository();
+        ContoDiffException.checkInterrupted();
 
         // currentStatus = "Sending results";
         System.out.println("Sending results");
         return diffResult;
     }
 
-    private void loadConfigForDiffExecutor() {
+    private void loadConfigForDiffExecutor(DiffExecutor executor) {
         // System.out.println("Call from: "+getThreadLocalRequest().getRemoteHost());
-        DiffExecutor.getSingleton().loadChangeActionDesc("rules/ChangeActions.xml");
-        DiffExecutor.getSingleton().loadRules("rules/Rule_OBO.xml");
+        executor.loadChangeActionDesc("rules/ChangeActions.xml");
+        executor.loadRules("rules/Rule_OBO.xml");
     }
 
-    private HashMap<String, Change> getFullDiffMapping(Map<String, String> acc2Name) {
+    private HashMap<String, Change> getFullDiffMapping(Map<String, String> acc2Name, DiffExecutor executor) {
         HashMap<String, Change> result = new HashMap<String, Change>();
-        DiffExecutor diffExec = DiffExecutor.getSingleton();
+        DiffExecutor diffExec = executor;
         for (ActionData change : diffExec.lowLevelActions) {
             List<String[]> changeValues = new Vector<String[]>();
             for (int i = 0; i < change.dataValues.size(); i++) {
@@ -205,10 +209,10 @@ public class DiffComputation {
         return new Change(md5Key, name, changeValues);
     }
 
-    private Map<String, List<String>> getCompactDiffMapping() {
+    private Map<String, List<String>> getCompactDiffMapping(DiffExecutor executor) {
         Map<String, List<String>> result = new HashMap<String, List<String>>();
         Set<String> allDependantChanges = new HashSet<String>();
-        DiffExecutor diffExec = DiffExecutor.getSingleton();
+        DiffExecutor diffExec = executor;
 
         for (String from : diffExec.allRuleMappings.keySet()) {
             allDependantChanges.addAll(diffExec.allRuleMappings.get(from));
@@ -238,9 +242,9 @@ public class DiffComputation {
         return result;
     }
 
-    private Map<String, List<String>> getBasicDiffMapping() {
+    private Map<String, List<String>> getBasicDiffMapping(DiffExecutor executor) {
         HashMap<String, List<String>> result = new HashMap<String, List<String>>();
-        DiffExecutor diffExec = DiffExecutor.getSingleton();
+        DiffExecutor diffExec = executor;
 
         for (ActionData change : diffExec.lowLevelActions) {
             List<String> currentChanges = result.get(change.changeActionDesc.name);

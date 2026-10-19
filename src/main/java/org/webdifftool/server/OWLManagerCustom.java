@@ -22,6 +22,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.gomma.diff.Globals;
 import org.gomma.diff.utils.DataBaseHandler;
+import org.gomma.diff.ContoDiffException;
+import org.gomma.diff.DiffExecutor;
 import org.gomma.diff.utils.Utils;
 import org.gomma.io.importer.models.ImportObj;
 import org.gomma.io.importer.models.ImportObj.ImportObjAttribute;
@@ -50,6 +52,12 @@ import java.util.stream.Collectors;
 import static org.ContoDiffMain.getSha1FromIri;
 
 public class OWLManagerCustom {
+    private final DataBaseHandler database;
+
+    public OWLManagerCustom(DataBaseHandler database) {
+        this.database = database;
+    }
+
 	
 	List<String[]> objectsImport; 
 	List<String[]> attributesImport;
@@ -88,8 +96,11 @@ public class OWLManagerCustom {
 	public int newVersionAttributeSize = 0;
 	
 	public static void main(String[] args) throws Exception {
-		OWLManagerCustom test = new OWLManagerCustom();
+        try (DataBaseHandler database = new DataBaseHandler()) {
+            new DiffExecutor(database).setupRepository();
+		OWLManagerCustom test = new OWLManagerCustom(database);
 		test.parseAndIntegrateChanges("http://dbserv2.informatik.uni-leipzig.de/~hartung/MA_1-197.owl", "http://dbserv2.informatik.uni-leipzig.de/~hartung/MA_1-206.owl");
+        }
 	}
 	
 	public void parseAndIntegrateChanges(String oldVersionString, String newVersionString) {
@@ -134,12 +145,12 @@ public class OWLManagerCustom {
 	
 	public void integrateBasicChanges() {
 		try {
-			DataBaseHandler.getInstance().executeDml("TRUNCATE TABLE "+Globals.WORKING_TABLE);
+			database.executeDml("TRUNCATE TABLE "+Globals.WORKING_TABLE);
 			
-			PreparedStatement oneValueChange = DataBaseHandler.getInstance().prepareStatement("MERGE INTO "+Globals.WORKING_TABLE+" (actionMD5,change_action,value1) KEY (actionMD5) VALUES (?,?,?)");
-			PreparedStatement twoValueChange = DataBaseHandler.getInstance().prepareStatement("MERGE INTO "+Globals.WORKING_TABLE+" (actionMD5,change_action,value1,value2) KEY (actionMD5) VALUES (?,?,?,?)");
-			PreparedStatement threeValueChange = DataBaseHandler.getInstance().prepareStatement("MERGE INTO "+Globals.WORKING_TABLE+" (actionMD5,change_action,value1,value2,value3) KEY (actionMD5) VALUES (?,?,?,?,?)");
-			PreparedStatement sixValueChange = DataBaseHandler.getInstance().prepareStatement("INSERT INTO "+Globals.WORKING_TABLE+" (actionMD5,change_action,value1,value2,value3,value4,value5,value6) VALUES (?,?,?,?,?,?,?,?)");
+			try (PreparedStatement oneValueChange = database.prepareStatement("MERGE INTO "+Globals.WORKING_TABLE+" (actionMD5,change_action,value1) KEY (actionMD5) VALUES (?,?,?)");
+			PreparedStatement twoValueChange = database.prepareStatement("MERGE INTO "+Globals.WORKING_TABLE+" (actionMD5,change_action,value1,value2) KEY (actionMD5) VALUES (?,?,?,?)");
+			PreparedStatement threeValueChange = database.prepareStatement("MERGE INTO "+Globals.WORKING_TABLE+" (actionMD5,change_action,value1,value2,value3) KEY (actionMD5) VALUES (?,?,?,?,?)");
+			PreparedStatement sixValueChange = database.prepareStatement("INSERT INTO "+Globals.WORKING_TABLE+" (actionMD5,change_action,value1,value2,value3,value4,value5,value6) VALUES (?,?,?,?,?,?,?,?)")) {
 			
 			for (String concept : conceptAdditions) {
 				oneValueChange.setString(1, Utils.MD5(new String[]{"addC",concept}));
@@ -218,8 +229,9 @@ public class OWLManagerCustom {
 				threeValueChange.addBatch();
 			}
 			threeValueChange.executeBatch();
+            }
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new ContoDiffException("Cannot integrate ontology changes", e);
 		}
 	}
 	
@@ -434,7 +446,9 @@ public class OWLManagerCustom {
 			OWLReasonerFactory reasonerFactory = new ElkReasonerFactory();
 
 			OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ontology);
-			for (OWLClass owlClass : ontology.getClassesInSignature()) {				
+        try {
+			for (OWLClass owlClass : ontology.getClassesInSignature()) {
+            ContoDiffException.checkInterrupted();				
 				/*if(owlClass.getURI().toString().contains("http://www.geneontology.org")){
 						System.out.println(owlClass.toString());
 				}*/
@@ -549,8 +563,9 @@ public class OWLManagerCustom {
 				relationshipsImport.add(new String[]{objRel.getToAccessionNumber(),objRel.getFromAccessionNumber(),objRel.getType()});
 			}
 
+        } finally { reasoner.dispose(); }
 	} catch (OWLOntologyCreationException e) {
-		System.out.println("The ontology could not be created: " + e.getMessage());
+		throw new ContoDiffException("Cannot load ontology", e);
 	}
 		
 	}
@@ -564,7 +579,9 @@ public class OWLManagerCustom {
 		ImportSourceStructure objRelSet = new ImportSourceStructure();
 		OWLReasonerFactory reasonerFactory = new ElkReasonerFactory();
 		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ontology);
+        try {
 		for (OWLClass owlClass : ontology.getClassesInSignature()) {
+            ContoDiffException.checkInterrupted();
 			/*if(owlClass.getURI().toString().contains("http://www.geneontology.org")){
 					System.out.println(owlClass.toString());
 			}*/
@@ -674,6 +691,7 @@ public class OWLManagerCustom {
 			//System.out.println(objRel.getToAccessionNumber()+" "+objRel.getType()+" "+objRel.getFromAccessionNumber());
 			relationshipsImport.add(new String[] { objRel.getToAccessionNumber(), objRel.getFromAccessionNumber(), objRel.getType() });
 		}
+        } finally { reasoner.dispose(); }
 	}
 	
 	protected void addAttributeToTmpList(String[] newAttribute, List<String[]> attributesToImport) {
@@ -1041,21 +1059,17 @@ public class OWLManagerCustom {
 	}
 	
 	public String getOBOContentFromFile(String location) {
-		try {
-			RandomAccessFile file = new RandomAccessFile(location, "r");
+		try (RandomAccessFile file = new RandomAccessFile(location, "r")) {
 			String line;
 			StringBuffer result = new StringBuffer();
 			while ((line=file.readLine())!=null) {
 				result.append(line+"\n");
 			}
-			file.close();
 			return result.toString();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			return null;
+			throw new ContoDiffException("Cannot integrate ontology changes", e);
 		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
+			throw new ContoDiffException("Cannot integrate ontology changes", e);
 		}
 	}
 

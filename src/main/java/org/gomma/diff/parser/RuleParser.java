@@ -29,6 +29,7 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.gomma.diff.DiffExecutor;
+import org.gomma.diff.ContoDiffException;
 import org.gomma.diff.model.InputAction;
 import org.gomma.diff.model.Equation;
 import org.gomma.diff.model.ResultAction;
@@ -46,7 +47,10 @@ public class RuleParser extends DefaultHandler {
     private        ResultAction currentResultAction = null;
     private	     Equation currentEquation = null;
 
-    public RuleParser(String ruleFile) {
+    private final DiffExecutor executor;
+
+    public RuleParser(String ruleFile, DiffExecutor executor) {
+        this.executor = executor;
         this.ruleFileLocation = ruleFile;
     }
 
@@ -61,8 +65,11 @@ public class RuleParser extends DefaultHandler {
             duration = (System.currentTimeMillis()-start);
             System.out.println(" ...   "+rulesToImport.size()+" rules parsed ! ("+duration+" ms)");
         } catch (ParserConfigurationException e) {
+            throw new ContoDiffException("Cannot load rules: " + ruleFileLocation, e);
         } catch (SAXException e) {
+            throw new ContoDiffException("Cannot load rules: " + ruleFileLocation, e);
         } catch (IOException e) {
+            throw new ContoDiffException("Cannot load rules: " + ruleFileLocation, e);
         }
     }
 
@@ -99,7 +106,7 @@ public class RuleParser extends DefaultHandler {
                     } else if (attName.equalsIgnoreCase("negation")) {
                         this.currentInputAction.negation = Boolean.parseBoolean(attrs.getValue(i).trim());
                     } else if (attName.equalsIgnoreCase("name")) {
-                        this.currentInputAction.actionDesc = DiffExecutor.getSingleton().getChangeActionDesc(attrs.getValue(i).trim());
+                        this.currentInputAction.actionDesc = executor.getChangeActionDesc(attrs.getValue(i).trim());
                     } else if (attName.equalsIgnoreCase("checkOnly")) {
                         this.currentInputAction.checkOnly = Boolean.parseBoolean(attrs.getValue(i).trim());
                     }
@@ -136,7 +143,7 @@ public class RuleParser extends DefaultHandler {
                     for (int i=0;i<attrs.getLength();i++) {
                         String attName = attrs.getQName(i);
                         if (attName.equalsIgnoreCase("name")) {
-                            this.currentResultAction.actionDesc = DiffExecutor.getSingleton().getChangeActionDesc(attrs.getValue(i).trim());
+                            this.currentResultAction.actionDesc = executor.getChangeActionDesc(attrs.getValue(i).trim());
                         }
                     }
                 }
