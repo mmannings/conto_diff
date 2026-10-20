@@ -29,6 +29,9 @@ public class Globals {
 	public static String EQUATION_UNEQUAL = "unequal";
 	public static String EQUATION_IN_SET = "in";
 	
+	// Value columns use H2 VARCHAR without an explicit length: ontology values
+	// and aggregated changes must not be limited to 2000/6000 characters.
+	// Keep VARCHAR for the indexes and equality comparisons used by diff rules.
 	//Schema information
 	public static String VERSION_TABLE_BASE = "evol_versions";
 	public static String VERSION_TABLE = "evol_versions";
@@ -46,12 +49,12 @@ public class Globals {
 													  "type varchar(50) NOT NULL,"+
 													  "base_type varchar(50) NOT NULL,"+
 													  "values_md5 varchar(50) NOT NULL,"+
-													  "value1 varchar(2000) default NULL,"+
-													  "value2 varchar(2000) default NULL,"+
-													  "value3 varchar(2000) default NULL,"+
-													  "value4 varchar(2000) default NULL,"+
-													  "value5 varchar(2000) default NULL,"+
-													  "value6 varchar(2000) default NULL,"+
+													  "value1 varchar default NULL,"+
+													  "value2 varchar default NULL,"+
+													  "value3 varchar default NULL,"+
+													  "value4 varchar default NULL,"+
+													  "value5 varchar default NULL,"+
+													  "value6 varchar default NULL,"+
 													  "KEY ver_version (version,base_type,type),"+
 													  "KEY ver_value1 (value1),"+
 													  "KEY ver_value2 (value2),"+
@@ -65,12 +68,12 @@ public class Globals {
 													  "actionMD5 varchar(50) default NULL,"+
 													  "change_action varchar(50) NOT NULL,"+
 													  "reduce int(11) default '0',"+
-													  "value1 varchar(2000) default NULL,"+
-													  "value2 varchar(6000) default NULL,"+
-													  "value3 varchar(6000) default NULL,"+
-													  "value4 varchar(2000) default NULL,"+
-													  "value5 varchar(2000) default NULL,"+
-													  "value6 varchar(2000) default NULL,"+
+													  "value1 varchar default NULL,"+
+													  "value2 varchar default NULL,"+
+													  "value3 varchar default NULL,"+
+													  "value4 varchar default NULL,"+
+													  "value5 varchar default NULL,"+
+													  "value6 varchar default NULL,"+
 													  "UNIQUE KEY wor_actionMD5 (actionMD5),"+
 													  "KEY wor_change_action (change_action),"+
 													  "KEY wor_reduce (reduce),"+
@@ -83,12 +86,12 @@ public class Globals {
 	public static String HIGH_LEVEL_RESULT_SCHEMA = "CREATE TABLE IF NOT EXISTS "+HIGH_LEVEL_RESULT_TABLE+" ("+
 													  "actionMD5 varchar(50) default NULL,"+
 													  "change_action varchar(50) NOT NULL,"+
-													  "value1 varchar(2000) default NULL,"+
-													  "value2 varchar(6000) default NULL,"+
-													  "value3 varchar(6000) default NULL,"+
-													  "value4 varchar(2000) default NULL,"+
-													  "value5 varchar(2000) default NULL,"+
-													  "value6 varchar(2000) default NULL,"+
+													  "value1 varchar default NULL,"+
+													  "value2 varchar default NULL,"+
+													  "value3 varchar default NULL,"+
+													  "value4 varchar default NULL,"+
+													  "value5 varchar default NULL,"+
+													  "value6 varchar default NULL,"+
 													  "UNIQUE KEY hlv_actionMD5 (actionMD5),"+
 													  "KEY hlv_change_action (change_action),"+
 													  "KEY hlv_value1 (value1),"+
@@ -100,12 +103,12 @@ public class Globals {
 	public static String LOW_LEVEL_RESULT_SCHEMA = "CREATE TABLE IF NOT EXISTS "+LOW_LEVEL_RESULT_TABLE+" ("+
 													  "actionMD5 varchar(50) default NULL,"+
 													  "change_action varchar(50) NOT NULL,"+
-													  "value1 varchar(2000) default NULL,"+
-													  "value2 varchar(2000) default NULL,"+
-													  "value3 varchar(6000) default NULL,"+
-													  "value4 varchar(2000) default NULL,"+
-													  "value5 varchar(2000) default NULL,"+
-													  "value6 varchar(2000) default NULL,"+
+													  "value1 varchar default NULL,"+
+													  "value2 varchar default NULL,"+
+													  "value3 varchar default NULL,"+
+													  "value4 varchar default NULL,"+
+													  "value5 varchar default NULL,"+
+													  "value6 varchar default NULL,"+
 													  "UNIQUE KEY llv_actionMD5 (actionMD5),"+
 													  "KEY llv_change_action (change_action),"+
 													  "KEY llv_value1 (value1),"+
@@ -132,12 +135,12 @@ public class Globals {
 		  "type varchar(50) NOT NULL,"+
 		  "base_type varchar(50) NOT NULL,"+
 		  "values_md5 varchar(50) NOT NULL,"+
-		  "value1 varchar(2000) default NULL,"+
-		  "value2 varchar(2000) default NULL,"+
-		  "value3 varchar(2000) default NULL,"+
-		  "value4 varchar(2000) default NULL,"+
-		  "value5 varchar(2000) default NULL,"+
-		  "value6 varchar(2000) default NULL,"+
+		  "value1 varchar default NULL,"+
+		  "value2 varchar default NULL,"+
+		  "value3 varchar default NULL,"+
+		  "value4 varchar default NULL,"+
+		  "value5 varchar default NULL,"+
+		  "value6 varchar default NULL,"+
 		  "KEY ver_version (version,base_type,type),"+
 		  "KEY ver_value1 (value1),"+
 		  "KEY ver_value2 (value2),"+
@@ -151,12 +154,12 @@ public class Globals {
 		  "actionMD5 varchar(50) default NULL,"+
 		  "change_action varchar(50) NOT NULL,"+
 		  "reduce int(11) default '0',"+
-		  "value1 varchar(2000) default NULL,"+
-		  "value2 varchar(6000) default NULL,"+
-		  "value3 varchar(6000) default NULL,"+
-		  "value4 varchar(2000) default NULL,"+
-		  "value5 varchar(2000) default NULL,"+
-		  "value6 varchar(2000) default NULL,"+
+		  "value1 varchar default NULL,"+
+		  "value2 varchar default NULL,"+
+		  "value3 varchar default NULL,"+
+		  "value4 varchar default NULL,"+
+		  "value5 varchar default NULL,"+
+		  "value6 varchar default NULL,"+
 		  "UNIQUE KEY wor_actionMD5 (actionMD5),"+
 		  "KEY wor_change_action (change_action),"+
 		  "KEY wor_reduce (reduce),"+
@@ -169,12 +172,12 @@ public class Globals {
 		HIGH_LEVEL_RESULT_SCHEMA = "CREATE TABLE IF NOT EXISTS "+HIGH_LEVEL_RESULT_TABLE+" ("+
 		  "actionMD5 varchar(50) default NULL,"+
 		  "change_action varchar(50) NOT NULL,"+
-		  "value1 varchar(2000) default NULL,"+
-		  "value2 varchar(6000) default NULL,"+
-		  "value3 varchar(6000) default NULL,"+
-		  "value4 varchar(2000) default NULL,"+
-		  "value5 varchar(2000) default NULL,"+
-		  "value6 varchar(2000) default NULL,"+
+		  "value1 varchar default NULL,"+
+		  "value2 varchar default NULL,"+
+		  "value3 varchar default NULL,"+
+		  "value4 varchar default NULL,"+
+		  "value5 varchar default NULL,"+
+		  "value6 varchar default NULL,"+
 		  "UNIQUE KEY hlv_actionMD5 (actionMD5),"+
 		  "KEY hlv_change_action (change_action),"+
 		  "KEY hlv_value1 (value1),"+
@@ -186,12 +189,12 @@ public class Globals {
 		LOW_LEVEL_RESULT_SCHEMA = "CREATE TABLE IF NOT EXISTS "+LOW_LEVEL_RESULT_TABLE+" ("+
 		  "actionMD5 varchar(50) default NULL,"+
 		  "change_action varchar(50) NOT NULL,"+
-		  "value1 varchar(2000) default NULL,"+
-		  "value2 varchar(6000) default NULL,"+
-		  "value3 varchar(6000) default NULL,"+
-		  "value4 varchar(2000) default NULL,"+
-		  "value5 varchar(2000) default NULL,"+
-		  "value6 varchar(2000) default NULL,"+
+		  "value1 varchar default NULL,"+
+		  "value2 varchar default NULL,"+
+		  "value3 varchar default NULL,"+
+		  "value4 varchar default NULL,"+
+		  "value5 varchar default NULL,"+
+		  "value6 varchar default NULL,"+
 		  "UNIQUE KEY llv_actionMD5 (actionMD5),"+
 		  "KEY llv_change_action (change_action),"+
 		  "KEY llv_value1 (value1),"+
