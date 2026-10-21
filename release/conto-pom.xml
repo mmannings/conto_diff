@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.dbs.leipzig</groupId>
+  <artifactId>conto</artifactId>
+  <version>1.1.3</version>
+  <packaging>jar</packaging>
+  <name>COnto shaded integration artifact</name>
+  <description>COnto with structured RDF export, long change-value support, and isolated comparisons.</description>
+  <url>https://github.com/mmannings/conto_diff</url>
+  <licenses>
+    <license>
+      <name>GNU General Public License, version 3</name>
+      <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
+    </license>
+  </licenses>
+  <!-- All dependencies are bundled in the shaded artifact. -->
+</project>
