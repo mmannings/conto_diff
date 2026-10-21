@@ -31,6 +31,7 @@ import org.webdifftool.client.model.DiffContext;
 import org.webdifftool.client.model.SemanticDiff;
 import org.webdifftool.client.model.changes.Change;
 import org.webdifftool.server.OWLManagerCustom;
+import org.webdifftool.server.ChangeRdfExporter;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -107,7 +108,8 @@ public class ContoDiffMain {
         SemanticDiff sdiff = new SemanticDiff();
 
         for (Map.Entry<String, Change> change : mapping.allChanges.entrySet()) {
-            OWLManagerCustom.setProvDmMap(change.getKey(), change.getValue().getSimpleWordRepresentation().trim(), sdiff.getProvDMs());
+            sdiff.getProvDMs().put(change.getKey() + "_" + change.getValue().name,
+                    ChangeRdfExporter.export(change.getKey(), change.getValue(), mapping.allChanges));
         }
 
         OWLManagerCustom.generateLocationMap(sdiff.getProvDMs(), sdiff.getLocations());

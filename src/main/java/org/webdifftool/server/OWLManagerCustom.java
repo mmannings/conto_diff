@@ -41,7 +41,6 @@ import org.webdifftool.client.model.DiffContext;
 import org.webdifftool.client.model.OperationTypeMapper;
 
 import java.io.*;
-import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
@@ -809,63 +808,6 @@ public class OWLManagerCustom {
 		}
 
 		return strBuilder.toString();
-	}
-
-	public static String getHashOperationConcat(String hash, String input) {
-		String[] parts = input.split(" ");
-		return hash + "_" + parts[0];
-	}
-
-	private static boolean isValidIRI(String input) {
-		String[] parts = input.split(" ");
-		try {
-			for (int i = 0; i < parts.length - 1; i++) {
-				new URL(parts[i].substring(parts[i].indexOf("<") + 1, parts[i].lastIndexOf(">"))).toURI();
-			}
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
-	}
-
-	public static List<String> generateQuad(String hash, String input) {
-		input = input.replaceAll("\\[Thing, http:\\/\\/www\\.w3\\.org\\/2002\\/07\\/owl\\]", "http://www.w3.org/2002/07/owl#Thing");
-		String[] parts = input.split(" ");
-		String hashOperation = getHashOperationConcat(hash, input);
-		String result = "";
-		if (parts.length == 2) {
-			 result += "<" + parts[1] + "> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> " +
-					 "<http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> " +
-			 		"<https://example.org/" + hashOperation + "> .";
-		} else if (parts.length == 4) {
-			if (parts[2].equals("<http://www.w3.org/2000/01/rdf-schema#subClassOf>")) {
-				for (int i = 1; i < parts.length; i++) {
-					if (parts[i].startsWith("http")) {
-						result += "<" + parts[i] + "> ";
-					} else {
-						result += parts[i] + " ";
-					}
-				}
-				result += "<https://example.org/" + hashOperation + "> .";
-			}
-		}
-		else if (parts.length > 4) {
-			for (int i = 3; i < parts.length; i++) {
-				result += "<" + parts[1] + "> " + parts[2] + " <" + parts[i] + "> <https://example.org/" + hashOperation + "> .\n";
-			}
-		}
-		String[] res = result.split("\n");
-		return Arrays.stream(res)
-				.filter(OWLManagerCustom::isValidIRI)
-				.collect(Collectors.toList());
-	}
-
-	public static void setProvDmMap(String hash, String input, Map<String, String> provDmMap) {
-		List<String> output = generateQuad(hash, input);
-
-        String stringBuilder = String.join(" ", output) + System.lineSeparator();
-		provDmMap.put(getHashOperationConcat(hash, input), stringBuilder);
-
 	}
 
 	public static void generateLocationMap(Map<String, String> provDmMap, Map<String, String> locations) {
