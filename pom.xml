@@ -64,6 +64,12 @@
 
 
     <dependencies>
+        <!-- Used directly by the integration exporter; matches OWLAPI's RDF4J version. -->
+        <dependency>
+            <groupId>org.eclipse.rdf4j</groupId>
+            <artifactId>rdf4j-rio-nquads</artifactId>
+            <version>3.7.7</version>
+        </dependency>
         <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>5.9.3</version><scope>test</scope></dependency>
         <dependency>
             <groupId>Gomma</groupId>

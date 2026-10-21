@@ -65,3 +65,34 @@ still fail with a `SQLException` retaining the original cause.
 `JdbcDriverLoadingTest` launches a fresh JVM and initializes JDBC discovery with
 a class loader that cannot see H2 before opening a comparison database. This
 regression test fails with 1.1.0 and passes with explicit driver initialization.
+
+## Structured RDF export
+
+`ContoDiffMain.makeContoDiff` exports the existing computed `Change` objects via
+`ChangeRdfExporter`. It no longer parses `getSimpleWordRepresentation()` or treats
+list brackets, commas, or spaces as RDF syntax. RDF4J writes N-Quads and escapes
+literal values. The operation graph identifiers and existing concept marker are
+preserved. Basic relationship predicates are retained, including predicates
+other than `rdfs:subClassOf`.
+
+For complex changes, the exporter follows COnto's existing `mapsTo` provenance to
+basic changes. Aggregated parameters use `#` as a delimiter, which can split
+fragment IRIs; export does not guess how to reassemble those strings. Each
+complex operation's graph contains the statements from its linked basic changes.
+The rule engine, change names, IDs, parameters, and detection algorithms are
+unchanged. Attribute values are exported as the strings supplied by COnto;
+language tags or datatypes already discarded during computation are not invented.
+
+Malformed IRIs, unsupported operations without underlying changes, and missing
+or cyclic provenance raise `ContoDiffException` instead of silently generating
+an incomplete graph. No historical ontology files or imports are repaired,
+substituted, or synthesized. These failures remain the responsibility of their
+ontology developers and maintainers. Empty results from unsupported edits in
+the comparison model are not solved by this export change.
+
+`ChangeRdfExporterTest` covers fragment IRIs in aggregated operations, arbitrary
+relationship predicates, literal escaping, invalid IRIs, provenance failures,
+and the public API's N-Quads and Turtle metadata. It also verifies that exporting
+a computed mapping does not mutate its change values. The old display-string
+export helpers in `OWLManagerCustom` were removed; the backend-facing
+`makeContoDiff(DiffContext, String)` signature remains unchanged.

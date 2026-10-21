@@ -12,7 +12,8 @@ public class OperationTypeMapper {
         operationMap.put("delC", "prov:delConcept");
         operationMap.put("addC", "prov:addConcept");
         operationMap.put("mapC", "prov:mapConcept");
-        operationMap.put("addAttribute", "prov:addAttribute");
+        operationMap.put("addA", "prov:addAttribute");
+        operationMap.put("idEvent", "prov:idEvent");
         operationMap.put("delA", "prov:delAttribute");
         operationMap.put("mapA", "prov:mapAttribute");
         operationMap.put("addR", "prov:addRelationship");
