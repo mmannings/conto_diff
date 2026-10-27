@@ -127,6 +127,47 @@ class ChangeRdfExporterTest {
         }
     }
 
+    @Test void generatedMetadataDeclaresItsOwnNamespaces() throws Exception {
+        OWLOntology left = ontology("Old"), right = ontology("New");
+        org.semanticweb.owlapi.formats.TurtleDocumentFormat leftFormat = new org.semanticweb.owlapi.formats.TurtleDocumentFormat() {
+            @Override public Map<String, String> getPrefixName2PrefixMap() { return Collections.emptyMap(); }
+        };
+        Map<String, String> inputPrefixes = new HashMap<>();
+        org.semanticweb.owlapi.formats.TurtleDocumentFormat rightFormat = new org.semanticweb.owlapi.formats.TurtleDocumentFormat() {
+            @Override public Map<String, String> getPrefixName2PrefixMap() { return inputPrefixes; }
+        };
+        leftFormat.clear();
+        rightFormat.clear();
+        left.getOWLOntologyManager().setOntologyFormat(left, leftFormat);
+        right.getOWLOntologyManager().setOntologyFormat(right, rightFormat);
+        String first = "1111111111111111111111111111111111111111";
+        String second = "2222222222222222222222222222222222222222";
+        Map<String, String> sources = new HashMap<>(), entities = new HashMap<>();
+        OWLManagerCustom.generateSourceEntiry("https://example.org/" + first + "/ontology.obo", sources);
+        OWLManagerCustom.generateSourceEntiry("https://example.org/" + second + "/ontology.obo", sources);
+        org.webdifftool.client.model.DiffContext context = org.webdifftool.client.model.DiffContext.builder()
+                .leftDatetime("2020-01-01T00:00:00Z").rightDatetime("2021-01-01T00:00:00Z")
+                .leftMessage("before").rightMessage("after")
+                .leftCommitUri("https://example.org/commit/" + first)
+                .rightCommitUri("https://example.org/commit/" + second).build();
+        OWLManagerCustom.generateSDiffEntity(sources, first, second, entities, "https://example.org/ontology", context);
+        assertEquals("http://www.w3.org/2001/XMLSchema#", OWLManagerCustom.getAllPrefixes(left, right).get("xsd:"));
+        String body = String.join("\n", entities.values());
+        Model metadata = Rio.parse(new StringReader(OWLManagerCustom.prefixesMapToString(
+                OWLManagerCustom.getAllPrefixes(left, right)) + body), "", RDFFormat.TURTLE);
+        assertEquals(2, metadata.filter(null, SimpleValueFactory.getInstance().createIRI("http://www.w3.org/ns/prov#generatedAtTime"), null).size());
+        metadata.filter(null, SimpleValueFactory.getInstance().createIRI("http://www.w3.org/ns/prov#generatedAtTime"), null)
+                .forEach(st -> assertEquals("http://www.w3.org/2001/XMLSchema#dateTime",
+                        ((org.eclipse.rdf4j.model.Literal) st.getObject()).getDatatype().stringValue()));
+        inputPrefixes.put("xsd:", "https://example.org/wrong/");
+        inputPrefixes.put("prov:", "https://example.org/wrong/");
+        inputPrefixes.put("custom:", "https://example.org/custom/");
+        Map<String, String> prefixes = OWLManagerCustom.getAllPrefixes(left, right);
+        assertEquals("http://www.w3.org/2001/XMLSchema#", prefixes.get("xsd:"));
+        assertEquals("http://www.w3.org/ns/prov#", prefixes.get("prov:"));
+        assertEquals("https://example.org/custom/", prefixes.get("custom:"));
+    }
+
     private OWLOntology ontology(String parent) throws Exception {
         org.semanticweb.owlapi.model.OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
         OWLOntology ontology = manager.createOntology();

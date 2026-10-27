@@ -771,16 +771,15 @@ public class OWLManagerCustom {
 //				for OWL-API version 5.x
 //		Map<String, String> mergedMap = new HashMap<>(formatLeft.asPrefixOWLDocumentFormat().getPrefixName2PrefixMap());
 
-		mergedMap.put("prov:", "http://www.w3.org/ns/prov#");
-		mergedMap.put("rdf:", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-		mergedMap.put("rdfs:", "http://www.w3.org/2000/01/rdf-schema#");
-		mergedMap.put("owl:", "http://www.w3.org/2002/07/owl#");
-
-		//		for OWL-API version 4.x
         mergedMap.putAll(formatRight.asPrefixOWLOntologyFormat().getPrefixName2PrefixMap());
 
-//						for OWL-API version 5.x
-//		mergedMap.putAll(formatRight.asPrefixOWLDocumentFormat().getPrefixName2PrefixMap());
+        // Generated provenance uses these names regardless of the source format.
+        // Apply them last so input aliases cannot change the metadata vocabulary.
+        mergedMap.put("prov:", "http://www.w3.org/ns/prov#");
+        mergedMap.put("rdf:", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+        mergedMap.put("rdfs:", "http://www.w3.org/2000/01/rdf-schema#");
+        mergedMap.put("owl:", "http://www.w3.org/2002/07/owl#");
+        mergedMap.put("xsd:", "http://www.w3.org/2001/XMLSchema#");
 
 		return mergedMap;
 	}
