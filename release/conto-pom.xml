@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.dbs.leipzig</groupId>
   <artifactId>conto</artifactId>
-  <version>1.1.4</version>
+  <version>1.1.5</version>
   <packaging>jar</packaging>
   <name>COnto shaded integration artifact</name>
   <description>COnto with explicit metadata namespaces, structured RDF export, long change-value support, and isolated comparisons.</description>
