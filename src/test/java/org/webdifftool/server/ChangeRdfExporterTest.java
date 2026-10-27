@@ -66,9 +66,24 @@ class ChangeRdfExporterTest {
         assertEquals("https://example.org/relatedTo", result.iterator().next().getPredicate().stringValue());
     }
 
+    @Test void preservesRegisteredAuthorityAndNestedPathIris() throws Exception {
+        for (String iri : Arrays.asList(
+                "http://urigen_local_uri/963a1b3b-49f2-4ef9-8f37-5e9cd5403b2a/http://www.ebi.ac.uk/swo/data/SWO_3000069",
+                "https://example.org/a,b#c", "urn:test:identifier")) {
+            Change c = change("iri", "addR", "urn:test:A", SUBCLASS, iri);
+            Model result = parse(ChangeRdfExporter.export(c.id, c, Collections.singletonMap(c.id, c)));
+            assertEquals(iri, result.iterator().next().getObject().stringValue());
+        }
+    }
+
     @Test void refusesMalformedIrisInsteadOfRepairingOrSilentlyDroppingThem() {
-        Change c = change("bad", "addR", "urn:test:A", SUBCLASS, "https://www.metadata4ing.org,");
-        assertThrows(ContoDiffException.class, () -> ChangeRdfExporter.export(c.id,c,Collections.singletonMap(c.id,c)));
+        for (String iri : Arrays.asList("https://example.org/bad space", "https://example.org/205\r",
+                "https://example.org/205\n", "https://example.org/<nested>", "https://example.org/%ZZ",
+                "relative/path", "https:///missing-authority")) {
+            Change c = change("bad", "addR", "urn:test:A", SUBCLASS, iri);
+            assertThrows(ContoDiffException.class,
+                    () -> ChangeRdfExporter.export(c.id, c, Collections.singletonMap(c.id, c)), iri);
+        }
     }
 
     @Test void refusesMissingOrCyclicProvenance() {
