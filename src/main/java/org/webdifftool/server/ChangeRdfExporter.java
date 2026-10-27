@@ -111,8 +111,11 @@ public final class ChangeRdfExporter {
                 ? value.substring(1, value.length() - 1) : value;
         try {
             URI uri = new URI(raw);
+            // RDF identifiers need not be resolvable DNS hostnames. getHost()
+            // rejects registered authorities such as SWO's urigen_local_uri.
+            // Keep syntax validation and require an authority for HTTP(S).
             if (!uri.isAbsolute() || (("http".equalsIgnoreCase(uri.getScheme())
-                    || "https".equalsIgnoreCase(uri.getScheme())) && uri.getHost() == null)) {
+                    || "https".equalsIgnoreCase(uri.getScheme())) && uri.getRawAuthority() == null)) {
                 throw failure("Cannot export invalid absolute IRI: " + value);
             }
             return VALUES.createIRI(raw);
