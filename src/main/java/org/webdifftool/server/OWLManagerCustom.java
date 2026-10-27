@@ -40,6 +40,9 @@ import org.semanticweb.owlapi.search.EntitySearcher;
 import org.webdifftool.client.model.DiffContext;
 import org.webdifftool.client.model.OperationTypeMapper;
 
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.rio.helpers.NTriplesUtil;
+
 import java.io.*;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -908,13 +911,15 @@ public class OWLManagerCustom {
 					"prov:hadPrimarySource " + entry.getKey() + " ;\n\t";
 			if (sha1.equals(firstSha1)) {
 				value += "prov:generatedAtTime \"" + diffContext.getLeftDatetime() + "\"^^xsd:dateTime ;\n\t" +
-					"prov:value \"" + diffContext.getLeftMessage() +  "\" ;\n\t" +
+					"prov:value " + NTriplesUtil.toNTriplesString(SimpleValueFactory.getInstance()
+						.createLiteral(diffContext.getLeftMessage())) + " ;\n\t" +
 					"rdfs:label \"" + sha1 + "\" ;\n\t" +
 					"rdfs:seeAlso <" + diffContext.getLeftCommitUri() + "> .\n\t";
 			} else if (sha1.equals(secondSha1)) {
 				value += "prov:wasRevisionOf " + "<https://example.org/history/" + firstSha1 + ">" + " ; \n\t" +
 						"prov:generatedAtTime \"" + diffContext.getRightDatetime() + "\"^^xsd:dateTime ;\n\t" +
-						"prov:value \"" + diffContext.getRightMessage() +  "\" ;\n\t" +
+						"prov:value " + NTriplesUtil.toNTriplesString(SimpleValueFactory.getInstance()
+						.createLiteral(diffContext.getRightMessage())) + " ;\n\t" +
 						"rdfs:label \"" + sha1 + "\" ;\n\t" +
 						"rdfs:seeAlso <" + diffContext.getRightCommitUri() + "> .\n\t";
 			}

@@ -168,6 +168,29 @@ class ChangeRdfExporterTest {
         assertEquals("https://example.org/custom/", prefixes.get("custom:"));
     }
 
+    @Test void metadataPreservesCommitMessagesAsRdfLiterals() throws Exception {
+        String first = "1111111111111111111111111111111111111111";
+        String second = "2222222222222222222222222222222222222222";
+        String before = "Fix regex ^[A-Z0-9\\.]+$ and Windows C:\\temp\\file";
+        String after = "A \"quoted\" message\nwith\ttabs\rreturns and Unicode → 🧪";
+        Map<String, String> sources = new HashMap<>(), entities = new HashMap<>();
+        OWLManagerCustom.generateSourceEntiry("https://example.org/" + first + "/ontology.ttl", sources);
+        OWLManagerCustom.generateSourceEntiry("https://example.org/" + second + "/ontology.ttl", sources);
+        org.webdifftool.client.model.DiffContext context = org.webdifftool.client.model.DiffContext.builder()
+                .leftDatetime("2020-01-01T00:00:00Z").rightDatetime("2021-01-01T00:00:00Z")
+                .leftMessage(before).rightMessage(after)
+                .leftCommitUri("https://example.org/commit/" + first)
+                .rightCommitUri("https://example.org/commit/" + second).build();
+        OWLManagerCustom.generateSDiffEntity(sources, first, second, entities, "https://example.org/ontology", context);
+        String prefixes = OWLManagerCustom.prefixesMapToString(
+                OWLManagerCustom.getAllPrefixes(ontology("Old"), ontology("New")));
+        Model metadata = Rio.parse(new StringReader(prefixes + String.join("\n", entities.values())), "", RDFFormat.TURTLE);
+        Set<String> messages = new HashSet<>();
+        metadata.filter(null, SimpleValueFactory.getInstance().createIRI("http://www.w3.org/ns/prov#value"), null)
+                .forEach(st -> messages.add(st.getObject().stringValue()));
+        assertEquals(new HashSet<>(Arrays.asList(before, after)), messages);
+    }
+
     private OWLOntology ontology(String parent) throws Exception {
         org.semanticweb.owlapi.model.OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
         OWLOntology ontology = manager.createOntology();
