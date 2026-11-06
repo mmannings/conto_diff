@@ -36,7 +36,7 @@ class ShadedJarIT {
  public static void main(String[] args) throws Exception {
   Path dir=Paths.get(args[0]);
   String ttl="@prefix owl: <http://www.w3.org/2002/07/owl#> . @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> . @prefix ex: <https://example.org#> . ex:O a owl:Ontology . ex:Old a owl:Class . ex:New a owl:Class . ex:A a owl:Class; rdfs:subClassOf ex:";
-  Files.write(dir.resolve("left.ttl"),(ttl+"Old .").getBytes(java.nio.charset.StandardCharsets.UTF_8));Files.write(dir.resolve("right.ttl"),(ttl+"New .").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+  Files.write(dir.resolve("left.ttl"),(ttl+"Old . ex:A rdfs:label \"Before\" .").getBytes(java.nio.charset.StandardCharsets.UTF_8));Files.write(dir.resolve("right.ttl"),(ttl+"New . ex:A rdfs:label \"After\" .").getBytes(java.nio.charset.StandardCharsets.UTF_8));
   String old="1111111111111111111111111111111111111111", newer="2222222222222222222222222222222222222222";
   DiffContext context=DiffContext.builder().fileLeft(dir.resolve("left.ttl").toString()).fileRight(dir.resolve("right.ttl").toString())
    .rawUrlLeft("https://example.org/"+old+"/o.ttl").rawUrlRight("https://example.org/"+newer+"/o.ttl")
@@ -48,6 +48,11 @@ class ShadedJarIT {
    org.eclipse.rdf4j.model.Model model=Rio.parse(in,"",RDFFormat.NQUADS);
    long count=model.stream().filter(s->s.getContext().stringValue().endsWith("_move")).count();
    if(count!=2) throw new AssertionError("Expected two move statements, got "+count);
+   for (String label : new String[]{"Before", "After"}) {
+    if (model.stream().noneMatch(s -> s.getObject() instanceof org.eclipse.rdf4j.model.Literal
+            && s.getObject().stringValue().equals(label)))
+     throw new AssertionError("Missing exported class annotation value: " + label);
+   }
   }
   try(InputStream in=Files.newInputStream(dir.resolve("output.ttl"))) { if(Rio.parse(in,"",RDFFormat.TURTLE).isEmpty())throw new AssertionError("Empty metadata"); }
   System.out.println("SHADED_JAR_SMOKE_PASSED");
