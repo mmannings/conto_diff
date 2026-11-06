@@ -593,7 +593,8 @@ public class OWLManagerCustom {
 			// get importObj (id & name)
 			for (OWLAnnotationAssertionAxiom  axiom : ontology.getAxioms(AxiomType.ANNOTATION_ASSERTION)) {
 				OWLAnnotationSubject subject = axiom.getSubject();
-				if (subject.equals(owlClass)){
+				// Annotation subjects are IRIs, not OWLClass objects.
+				if (subject.equals(owlClass.getIRI())){
 					String attributeName, attributeValue;
 					if (axiom.getValue() instanceof OWLLiteral) {
 						attributeName = axiom.getProperty().toString();
