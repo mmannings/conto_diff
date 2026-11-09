@@ -50,7 +50,8 @@ class ShadedJarIT {
    if(count!=2) throw new AssertionError("Expected two move statements, got "+count);
    for (String label : new String[]{"Before", "After"}) {
     if (model.stream().noneMatch(s -> s.getObject() instanceof org.eclipse.rdf4j.model.Literal
-            && s.getObject().stringValue().equals(label)))
+            && s.getObject().stringValue().equals(label)
+            && s.getPredicate().stringValue().equals("http://www.w3.org/2000/01/rdf-schema#label")))
      throw new AssertionError("Missing exported class annotation value: " + label);
    }
   }
