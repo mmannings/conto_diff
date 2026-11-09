@@ -22,11 +22,11 @@ mvn install:install-file -Dfile=lib/gomma-kernel.jar -DgroupId=Gomma -DartifactI
 mvn clean verify
 ```
 
-The standalone artifact is `target/ContoDiff-1.1.7-shaded.jar`. Run from the
+The standalone artifact is `target/ContoDiff-1.1.8-shaded.jar`. Run from the
 repository root, where the `rules/` directory is available:
 
 ```sh
-java -jar target/ContoDiff-1.1.7-shaded.jar -oa old.owl -ob new.owl -o diff.txt
+java -jar target/ContoDiff-1.1.8-shaded.jar -oa old.owl -ob new.owl -o diff.txt
 ```
 
 ## Comparison lifecycle in 1.1.0
@@ -97,9 +97,16 @@ a computed mapping does not mutate its change values. The old display-string
 export helpers in `OWLManagerCustom` were removed; the backend-facing
 `makeContoDiff(DiffContext, String)` signature remains unchanged.
 
-## Release 1.1.7 and registry publication
+## Release 1.1.8 and registry publication
 
-Version 1.1.7 fixes class annotation input mapping: annotation subjects are
+Version 1.1.8 preserves full annotation property IRIs in both OWL input
+paths instead of using OWLAPI display strings such as `rdfs:label`. Exported
+predicates now retain the source property identity. Class label lookup uses the
+same full IRI, preserving display names. Comparison rules are unchanged; this
+is an input representation correction, not prefix guessing during export.
+Existing stored graphs are unchanged and need reprocessing after backend adoption.
+
+It retains the 1.1.7 fix for class annotation input mapping: annotation subjects are
 matched against the class IRI, so label, cross-reference and other class
 annotation values reach the existing diff rules. Previously these values were
 silently omitted by an IRI-to-class-object comparison. Matching rules and the
@@ -135,12 +142,12 @@ Java 17 and record the source commit and artifact checksum:
 ```sh
 mvn clean verify
 git rev-parse HEAD
-sha256sum target/ContoDiff-1.1.7-shaded.jar
+sha256sum target/ContoDiff-1.1.8-shaded.jar
 ```
 
 Publish to the change-management project's Maven registry as
-`org.dbs.leipzig:conto:1.1.7`. Do not overwrite an existing version. First check
-**Deploy > Package registry** in GitLab project `86847758`; if `1.1.7` already
+`org.dbs.leipzig:conto:1.1.8`. Do not overwrite an existing version. First check
+**Deploy > Package registry** in GitLab project `86847758`; if `1.1.8` already
 exists, verify its checksum instead of uploading another binary.
 
 Authentication is required for publishing even though downloads are public.
@@ -155,7 +162,7 @@ printf '\n'
 export GITLAB_MAVEN_TOKEN
 mvn --batch-mode --no-transfer-progress -s release/gitlab-settings.xml \
   org.apache.maven.plugins:maven-deploy-plugin:3.1.1:deploy-file \
-  -Dfile=target/ContoDiff-1.1.7-shaded.jar \
+  -Dfile=target/ContoDiff-1.1.8-shaded.jar \
   -DpomFile=release/conto-pom.xml \
   -DrepositoryId=gitlab-maven \
   -Durl=https://gitlab.com/api/v4/projects/86847758/packages/maven

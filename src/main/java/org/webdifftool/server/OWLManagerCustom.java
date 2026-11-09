@@ -469,9 +469,7 @@ public class OWLManagerCustom {
 				for (OWLAnnotation axiom: annos){
 					String attributeName,attributeValue;
 					if(axiom.getValue() instanceof OWLLiteral){
-						attributeName = axiom.getProperty().toString();
-						attributeName = attributeName.replace("<", "");
-						attributeName = attributeName.replace(">", "");
+						attributeName = axiom.getProperty().getIRI().toString();
 						attributeValue = ((OWLLiteral)axiom.getValue()).getLiteral();
 
 						if (attributeValue.contains(".owl#")) {	//NORMALISIERUNG AN # IN STRING
@@ -552,7 +550,7 @@ public class OWLManagerCustom {
 						//System.out.println(obj.getAccessionNumber()+" "+objAtt.getAttName()+" "+objAtt.getValue());
 						attributesImport.add(new String[]{obj.getAccessionNumber(),objAtt.getAttName(),"N/A",objAtt.getValue()});
 					
-						if(objAtt.getAttName().equals("rdfs:label")){
+						if(objAtt.getAttName().equals("http://www.w3.org/2000/01/rdf-schema#label")){
 							this.conceptNames.put(obj.getAccessionNumber(), objAtt.getValue());
 							//System.out.println(obj.getAccessionNumber()+"\t"+objAtt.getValue());
 						}
@@ -597,9 +595,7 @@ public class OWLManagerCustom {
 				if (subject.equals(owlClass.getIRI())){
 					String attributeName, attributeValue;
 					if (axiom.getValue() instanceof OWLLiteral) {
-						attributeName = axiom.getProperty().toString();
-						attributeName = attributeName.replace("<", "");
-						attributeName = attributeName.replace(">", "");
+						attributeName = axiom.getProperty().getIRI().toString();
 						attributeValue = ((OWLLiteral) axiom.getValue()).getLiteral();
 
 						if (attributeValue.contains(".owl#")) { //NORMALISIERUNG AN # IN STRING
@@ -682,7 +678,7 @@ public class OWLManagerCustom {
 					//System.out.println(obj.getAccessionNumber()+" "+objAtt.getAttName()+" "+objAtt.getValue());
 					attributesImport.add(new String[] { obj.getAccessionNumber(), objAtt.getAttName(), "N/A", objAtt.getValue() });
 
-					if (objAtt.getAttName().equals("rdfs:label")) {
+					if (objAtt.getAttName().equals("http://www.w3.org/2000/01/rdf-schema#label")) {
 						this.conceptNames.put(obj.getAccessionNumber(), objAtt.getValue());
 						//System.out.println(obj.getAccessionNumber()+"\t"+objAtt.getValue());
 					}
