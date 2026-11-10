@@ -27,7 +27,6 @@ import org.gomma.diff.DiffExecutor;
 import org.gomma.diff.utils.Utils;
 import org.gomma.io.importer.models.ImportObj;
 import org.gomma.io.importer.models.ImportObj.ImportObjAttribute;
-import org.gomma.io.importer.models.ImportSourceStructure;
 import org.gomma.io.importer.models.ImportSourceStructure.ImportObjRelationship;
 import org.gomma.model.DataTypes;
 import org.semanticweb.elk.owlapi.ElkReasonerFactory;
@@ -444,7 +443,7 @@ public class OWLManagerCustom {
 			OWLOntology ontology = manager.loadOntologyFromOntologyDocument(is);
 			
 			HashMap<String, ImportObj>	objHashMap	= new HashMap<String, ImportObj>();
-			ImportSourceStructure		objRelSet	= new ImportSourceStructure();
+			OrderedRelationships objRelSet = new OrderedRelationships();
 			OWLReasonerFactory reasonerFactory = new ElkReasonerFactory();
 
 			OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ontology);
@@ -576,7 +575,7 @@ public class OWLManagerCustom {
 		relationshipsImport = new Vector<String[]>();
 
 		HashMap<String, ImportObj> objHashMap = new HashMap<String, ImportObj>();
-		ImportSourceStructure objRelSet = new ImportSourceStructure();
+		OrderedRelationships objRelSet = new OrderedRelationships();
 		OWLReasonerFactory reasonerFactory = new ElkReasonerFactory();
 		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ontology);
         try {
